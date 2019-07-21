@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:path_drawing/path_drawing.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
@@ -23,7 +22,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  final title = 'Flutter Bounding Box';
+  final title = 'Flutter Clipping';
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: title,
@@ -56,13 +55,15 @@ class _ImageCropperState extends State<ImageCropper> {
   @override
   void initState() {
     super.initState();
-    clipRegion = Offset.zero & imageKey.currentContext.size;
     _getBackgroundColor();
   }
 
   void _getBackgroundColor() async {
     PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(widget.image);
-    setState(() => backgroundColor = paletteGenerator.dominantColor.color);
+    setState(() {
+      backgroundColor = paletteGenerator.dominantColor.color;
+      clipRegion = Offset.zero & imageKey.currentContext.size;
+    });
   }
 
   // Called when the user starts to drag

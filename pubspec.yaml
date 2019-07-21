@@ -8,7 +8,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  path_drawing: ^0.4.1
   cupertino_icons: ^0.1.2
   palette_generator: ^0.2.0
 
