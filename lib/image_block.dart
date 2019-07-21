@@ -26,7 +26,7 @@ class _ImageBlockState extends State<ImageBlock> {
           Expanded(
             child: CustomPaint(
               painter: CroppedImagePainter(_crop),
-              child: Container(), // TODO: needed?
+              child: Container(), // cause CustomPaint to take up entire available space
             ),
           ),
         ],
@@ -64,14 +64,15 @@ class ImageCropper extends StatefulWidget {
 }
 
 class _ImageCropperState extends State<ImageCropper> {
-  static Color selectionRectangleBackgroundColor = Color(0x15000000);
-  static Color selectionRectangleBorderColor = Color(0x80000000);
-  Color backgroundColor;
-  final crop = ImageCropDetails(); // TODO: how to scale this as the image size scales?
-  Rect dragRect;
-  Offset startDrag;
-  Offset currentDrag;
-  final GlobalKey imageKey = GlobalKey();
+  static Color _kSelectionRectangleBackground = Color(0x15000000);
+  static Color _kSelectionRectangleBorder = Color(0x80000000);
+  Color _bgColor;
+  ui.Image _image;
+  Rect _cropRect;
+  Rect _dragRect;
+  Offset _startDrag;
+  Offset _currentDrag;
+  final GlobalKey _imageKey = GlobalKey();
 
   @override
   void initState() {
@@ -80,14 +81,14 @@ class _ImageCropperState extends State<ImageCropper> {
   }
 
   void asyncInit() async {
-    crop.image = await _getImage();
-    var paletteGenerator = await PaletteGenerator.fromImage(crop.image);
-    setState(() => backgroundColor = paletteGenerator.dominantColor.color);
+    _image = await _getImage();
+    var paletteGenerator = await PaletteGenerator.fromImage(_image);
+    setState(() => _bgColor = paletteGenerator.dominantColor.color);
   }
 
   Future<ui.Image> _getImage() async {
     Timer timer;
-    final stream = widget.imageProvider.resolve(ImageConfiguration(devicePixelRatio: 1.0));
+    final stream = widget.imageProvider.resolve(ImageConfiguration());
     final completer = Completer<ui.Image>();
     ImageStreamListener listener;
     listener = ImageStreamListener((ImageInfo info, _) {
@@ -107,52 +108,60 @@ class _ImageCropperState extends State<ImageCropper> {
 
   // Called when the user starts to drag
   void _onPanDown(DragDownDetails details) {
-    var box = imageKey.currentContext.findRenderObject() as RenderBox;
+    var box = _imageKey.currentContext.findRenderObject() as RenderBox;
     var localPosition = box.globalToLocal(details.globalPosition);
-    debugPrint('${imageKey.currentWidget.runtimeType}');
+    debugPrint('${_imageKey.currentWidget.runtimeType}');
 
     setState(() {
-      startDrag = localPosition;
-      currentDrag = startDrag;
-      dragRect = Rect.fromPoints(startDrag, currentDrag);
-      //crop.size = imageKey.currentContext.size;
+      _startDrag = _currentDrag = localPosition;
+      _dragRect = Rect.fromPoints(_startDrag, _currentDrag);
     });
   }
 
   // Called as the user drags
   void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
-      currentDrag += details.delta;
-      dragRect = Rect.fromPoints(startDrag, currentDrag);
+      _currentDrag += details.delta;
+      _dragRect = Rect.fromPoints(_startDrag, _currentDrag);
     });
   }
 
   // Called if the drag is canceled (e.g. by rotating the device or switching apps)
   void _onPanCancel() {
     setState(() {
-      dragRect = null;
-      startDrag = null;
+      _dragRect = null;
+      _startDrag = null;
     });
   }
 
+  // this would make an excellent extension method...
+  static Rect scaleRect(Rect rect, double aspectRatio) => Rect.fromLTWH(rect.left * aspectRatio,
+      rect.top * aspectRatio, rect.width * aspectRatio, rect.height * aspectRatio);
+
   // Called when the drag ends
   void _onPanEnd(DragEndDetails details) async {
-    var newRect = (Offset.zero & imageKey.currentContext.size).intersect(dragRect);
+    var boxSize = _imageKey.currentContext.size;
+    var newRect = (Offset.zero & boxSize).intersect(_dragRect);
     if (newRect.size.width < 4 && newRect.size.height < 4) {
-      newRect = Offset.zero & imageKey.currentContext.size;
+      newRect = Offset.zero & boxSize;
     }
     setState(() {
-      crop.rect = newRect;
-      dragRect = null;
-      startDrag = null;
+      _cropRect = newRect;
+      _dragRect = null;
+      _startDrag = null;
     });
 
-    widget.onCrop(crop);
+    // scale crop rect, relative to render object box, to be relative to image size
+    var ratio = _image.width / boxSize.width;
+    assert(ratio == _image.height / boxSize.height); // uniform aspect ratio
+    widget.onCrop(ImageCropDetails()
+      ..image = _image
+      ..rect = scaleRect(_cropRect, ratio));
   }
 
   @override
   Widget build(BuildContext context) => Container(
-        color: backgroundColor,
+        color: _bgColor,
         alignment: Alignment.center,
         child: Padding(
           padding: const EdgeInsets.all(10),
@@ -164,16 +173,16 @@ class _ImageCropperState extends State<ImageCropper> {
             onPanEnd: _onPanEnd,
             child: Stack(
               children: [
-                Image(key: imageKey, image: widget.imageProvider),
+                Image(key: _imageKey, image: widget.imageProvider),
                 // selection rectangle
                 Positioned.fromRect(
-                  rect: dragRect ?? crop.rect ?? Rect.zero,
+                  rect: _dragRect ?? _cropRect ?? Rect.zero,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: selectionRectangleBackgroundColor,
+                      color: _kSelectionRectangleBackground,
                       border: Border.all(
                         width: 2,
-                        color: selectionRectangleBorderColor,
+                        color: _kSelectionRectangleBorder,
                         style: BorderStyle.solid,
                       ),
                     ),
