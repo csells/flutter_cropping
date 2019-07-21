@@ -44,24 +44,24 @@ class ImageCropper extends StatefulWidget {
 }
 
 class _ImageCropperState extends State<ImageCropper> {
-  PaletteGenerator paletteGenerator;
+  Color backgroundColor;
 
   @override
   void initState() {
     super.initState();
-    _getPaletteGenerator();
+    _getBackgroundColor();
   }
 
-  void _getPaletteGenerator() async {
-    paletteGenerator = await PaletteGenerator.fromImageProvider(widget.image);
-    setState(() {});
+  void _getBackgroundColor() async {
+    PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(widget.image);
+    setState(() => backgroundColor = paletteGenerator.dominantColor.color);
   }
 
   @override
   Widget build(BuildContext context) => CustomPaint(
         child: Center(
           child: Container(
-            color: paletteGenerator?.dominantColor?.color,
+            color: backgroundColor,
             alignment: Alignment.center,
             child: Image(image: widget.image),
           ),
