@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:path_drawing/path_drawing.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
-import 'package:path_drawing/path_drawing.dart';
 
 void _desktopInitHack() {
   bool isWeb = identical(0, 0.0);
@@ -29,9 +30,55 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.blue),
         home: Scaffold(
           appBar: AppBar(title: Text(title)),
-          body: BoundingBox(Rect.fromLTWH(10, 10, 100, 100)),
+          body: ImageCropper(AssetImage('images/map.png')),
         ),
       );
+}
+
+class ImageCropper extends StatefulWidget {
+  final ImageProvider image;
+  ImageCropper(this.image);
+
+  @override
+  _ImageCropperState createState() => _ImageCropperState();
+}
+
+class _ImageCropperState extends State<ImageCropper> {
+  PaletteGenerator paletteGenerator;
+
+  @override
+  void initState() {
+    super.initState();
+    _getPaletteGenerator();
+  }
+
+  void _getPaletteGenerator() async {
+    paletteGenerator = await PaletteGenerator.fromImageProvider(widget.image);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        child: Center(
+          child: Container(
+            color: paletteGenerator?.dominantColor?.color,
+            alignment: Alignment.center,
+            child: Image(image: widget.image),
+          ),
+        ),
+      );
+}
+
+/*
+class BackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    var paint = Paint()..color = Colors.black;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
 
 class BoundingBox extends StatefulWidget {
@@ -144,3 +191,4 @@ class DashPathBorder extends Border {
     assert(shape == BoxShape.rectangle, 'A border can only be drawn as a circle if it is uniform.');
   }
 }
+*/
