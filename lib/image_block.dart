@@ -46,9 +46,13 @@ class ImageCropper extends StatefulWidget {
   _ImageCropperState createState() => _ImageCropperState();
 }
 
+// this would make an excellent extension method...
+Rect scaleRect(Rect rect, double scale) =>
+    Rect.fromLTWH(rect.left * scale, rect.top * scale, rect.width * scale, rect.height * scale);
+
 class _ImageCropperState extends State<ImageCropper> {
-  static Color _kSelectionRectangleBackground = Color(0x15000000);
-  static Color _kSelectionRectangleBorder = Color(0x80000000);
+  // static Color _kSelectionRectangleBackground = Color(0x15000000);
+  // static Color _kSelectionRectangleBorder = Color(0x80000000);
   Color _bgColor;
   ui.Image _image;
   Rect _cropRect;
@@ -118,10 +122,6 @@ class _ImageCropperState extends State<ImageCropper> {
     });
   }
 
-  // this would make an excellent extension method...
-  static Rect scaleRect(Rect rect, double aspectRatio) => Rect.fromLTWH(rect.left * aspectRatio,
-      rect.top * aspectRatio, rect.width * aspectRatio, rect.height * aspectRatio);
-
   // Called when the drag ends
   void _onPanEnd(DragEndDetails details) async {
     var boxSize = _imageKey.currentContext.size;
@@ -158,41 +158,45 @@ class _ImageCropperState extends State<ImageCropper> {
             onPanUpdate: _onPanUpdate,
             onPanCancel: _onPanCancel,
             onPanEnd: _onPanEnd,
-            child: Stack(
-              children: [
-                Image(key: _imageKey, image: widget.imageProvider),
-                // selection rectangle
-                Positioned.fromRect(
-                  // TODO: scale this based on _boxSizeAtCrop and current box size
-                  rect: _dragRect ?? _cropRect ?? Rect.zero,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _kSelectionRectangleBackground,
-                      border: Border.all(
-                        width: 2,
-                        color: _kSelectionRectangleBorder,
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            child: CustomPaint(
+              foregroundPainter: _dragRect != null
+                  ? CropRectPainter(_dragRect)
+                  : _cropRect != null
+                      ? CropRectPainter(_cropRect, scaleSize: _boxSizeAtCrop)
+                      : null,
+              child: Image(key: _imageKey, image: widget.imageProvider),
             ),
           ),
         ),
       );
 }
 
-// TODO: render this into the correct aspect ratio
-class CroppedImagePainter extends CustomPainter {
-  final ImageCropDetails crop;
-  CroppedImagePainter(this.crop) {
-    // debugPrint('size= ${crop?.image?.width}x${crop?.image?.height}, rect: ${crop?.rect}');
-  }
+class CropRectPainter extends CustomPainter {
+  Rect rect;
+  Size scaleSize;
+  CropRectPainter(this.rect, {this.scaleSize}) : assert(rect != null);
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (crop == null) return;
+    var paint = Paint()
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..color = Color(0x80000000);
+    var scaledRect = scaleSize == null ? rect : scaleRect(rect, size.width / scaleSize.width);
+    canvas.drawRect(scaledRect, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
+}
+
+// TODO: render this into the correct aspect ratio
+class CroppedImagePainter extends CustomPainter {
+  final ImageCropDetails crop;
+  CroppedImagePainter(this.crop) : assert(crop != null);
+
+  @override
+  void paint(Canvas canvas, Size size) {
     var paint = Paint();
     canvas.drawImageRect(crop.image, crop.rect, Offset.zero & size, paint);
   }
