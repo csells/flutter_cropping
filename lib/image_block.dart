@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'cropped_image.dart';
 import 'image_cropper.dart';
 
-class ImageBlock extends StatefulWidget {
+class ImageBeforeAfterCrop extends StatefulWidget {
   final ImageProvider image;
-  ImageBlock(this.image);
+  ImageBeforeAfterCrop(this.image);
 
   @override
-  _ImageBlockState createState() => _ImageBlockState();
+  _ImageBeforeAfterCropState createState() => _ImageBeforeAfterCropState();
 }
 
-class _ImageBlockState extends State<ImageBlock> {
+class _ImageBeforeAfterCropState extends State<ImageBeforeAfterCrop> {
   ImageCropDetails _cropDetails;
 
   @override

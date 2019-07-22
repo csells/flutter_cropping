@@ -23,7 +23,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  final title = 'Flutter Clipping';
+  final title = 'Flutter Cropping';
   final image = AssetImage('images/map.png');
 
   @override
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.blue),
         home: Scaffold(
           appBar: AppBar(title: Text(title)),
-          body: ImageBlock(image),
+          body: ImageBeforeAfterCrop(image),
         ),
       );
 }
