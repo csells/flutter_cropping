@@ -172,17 +172,28 @@ class _ImageCropperState extends State<ImageCropper> {
 }
 
 class CropRectPainter extends CustomPainter {
+  static Color _kSelectionRectangleBackground = Color(0x15000000);
+  static Color _kSelectionRectangleBorder = Color(0x80000000);
   Rect rect;
   Size scaleSize;
   CropRectPainter(this.rect, {this.scaleSize}) : assert(rect != null);
 
   @override
   void paint(Canvas canvas, Size size) {
-    var paint = Paint()
+    var scaledRect = scaleSize == null ? rect : scaleRect(rect, size.width / scaleSize.width);
+    Paint paint;
+
+    // fill the box
+    paint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = _kSelectionRectangleBackground;
+    canvas.drawRect(scaledRect, paint);
+
+    // frame the box
+    paint = Paint()
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
-      ..color = Color(0x80000000);
-    var scaledRect = scaleSize == null ? rect : scaleRect(rect, size.width / scaleSize.width);
+      ..color = _kSelectionRectangleBorder;
     canvas.drawRect(scaledRect, paint);
   }
 
