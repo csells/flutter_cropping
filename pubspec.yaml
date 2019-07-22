@@ -1,6 +1,6 @@
-name: flutter_bounding_box
-description: A new Flutter project.
-version: 1.0.0+1
+name: flutter_cropping
+description: A demonstration of dynamic cropping in Flutter
+version: 0.1.0
 
 environment:
   sdk: ">=2.2.2 <3.0.0"
@@ -19,4 +19,4 @@ flutter:
   uses-material-design: true
 
   assets:
-   - images/map.png
+   - images/cat.jpg

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'image_before_after_crop.dart';
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'dart:io';
-
-import 'image_block.dart';
 
 void _desktopInitHack() {
   bool isWeb = identical(0, 0.0);
@@ -24,7 +23,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   final title = 'Flutter Cropping';
-  final image = AssetImage('images/map.png');
+  final image = AssetImage('images/cat.jpg');
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -32,7 +31,12 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(primarySwatch: Colors.blue),
         home: Scaffold(
           appBar: AppBar(title: Text(title)),
-          body: ImageBeforeAfterCrop(image),
+          body: Column(
+            children: [
+              Expanded(child: ImageBeforeAfterCrop(image)),
+              Text('Tap and drag inside image on the left. Single tap to reset to entire image.'),
+            ],
+          ),
         ),
       );
 }

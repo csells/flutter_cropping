@@ -2,8 +2,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 // this would make an excellent extension method...
-Rect scaleRect(Rect rect, double scale) =>
-    Rect.fromLTWH(rect.left * scale, rect.top * scale, rect.width * scale, rect.height * scale);
+Rect scaleRect(Rect rect, double scaleX, double scaleY) =>
+    Rect.fromLTWH(rect.left * scaleX, rect.top * scaleY, rect.width * scaleX, rect.height * scaleY);
 
 class ImageCropDetails {
   ui.Image image;
@@ -44,7 +44,9 @@ class CropRectPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    var scaledRect = scaleSize == null ? rect : scaleRect(rect, size.width / scaleSize.width);
+    var scaledRect = scaleSize == null
+        ? rect
+        : scaleRect(rect, size.width / scaleSize.width, size.height / scaleSize.height);
     Paint paint;
 
     // fill the box

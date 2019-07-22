@@ -33,11 +33,13 @@ class _ImageCropperState extends State<ImageCropper> {
 
   void asyncInit() async {
     _image = await _getImage();
-    var paletteGenerator = await PaletteGenerator.fromImage(_image);
-    setState(() => _bgColor = paletteGenerator.dominantColor.color);
-
     var size = Size(_image.width.toDouble(), _image.height.toDouble());
-    _crop(Offset.zero & size, size);
+    var rect = Offset.zero & size;
+
+    var palette = await PaletteGenerator.fromImage(_image, region: rect);
+    setState(() => _bgColor = palette.dominantColor.color);
+
+    _crop(rect, size);
   }
 
   Future<ui.Image> _getImage() async {
@@ -109,12 +111,11 @@ class _ImageCropperState extends State<ImageCropper> {
     });
 
     // scale crop rect, relative to render object box, to be relative to image size
-    var scale = _image.width / size.width;
-    // uniform aspect ratio == scale the same in both directions
-    assert(scale == _image.height / size.height);
+    var scaleX = _image.width / size.width;
+    var scaleY = _image.height / size.height;
     widget.onCrop(ImageCropDetails()
       ..image = _image
-      ..rect = scaleRect(_cropRect, scale)
+      ..rect = scaleRect(_cropRect, scaleX, scaleY)
       ..bgColor = _bgColor);
   }
 
