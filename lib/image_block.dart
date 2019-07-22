@@ -35,23 +35,6 @@ class _ImageBlockState extends State<ImageBlock> {
   void onImageCrop(ImageCropDetails details) => setState(() => _crop = details);
 }
 
-class CroppedImagePainter extends CustomPainter {
-  final ImageCropDetails crop;
-  CroppedImagePainter(this.crop) {
-    debugPrint('size= ${crop?.image?.width}x${crop?.image?.height}, rect: ${crop?.rect}');
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (crop == null) return;
-    var paint = Paint();
-    canvas.drawImageRect(crop.image, crop.rect, Offset.zero & size, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
-}
-
 typedef ImageCropCallback = void Function(ImageCropDetails info);
 
 class ImageCropper extends StatefulWidget {
@@ -69,6 +52,7 @@ class _ImageCropperState extends State<ImageCropper> {
   Color _bgColor;
   ui.Image _image;
   Rect _cropRect;
+  Size _boxSizeAtCrop;
   Rect _dragRect;
   Offset _startDrag;
   Offset _currentDrag;
@@ -147,6 +131,7 @@ class _ImageCropperState extends State<ImageCropper> {
     }
     setState(() {
       _cropRect = newRect;
+      _boxSizeAtCrop = boxSize;
       _dragRect = null;
       _startDrag = null;
     });
@@ -154,9 +139,11 @@ class _ImageCropperState extends State<ImageCropper> {
     // scale crop rect, relative to render object box, to be relative to image size
     var ratio = _image.width / boxSize.width;
     assert(ratio == _image.height / boxSize.height); // uniform aspect ratio
-    widget.onCrop(ImageCropDetails()
-      ..image = _image
-      ..rect = scaleRect(_cropRect, ratio));
+    widget.onCrop(
+      ImageCropDetails()
+        ..image = _image
+        ..rect = scaleRect(_cropRect, ratio),
+    );
   }
 
   @override
@@ -176,6 +163,7 @@ class _ImageCropperState extends State<ImageCropper> {
                 Image(key: _imageKey, image: widget.imageProvider),
                 // selection rectangle
                 Positioned.fromRect(
+                  // TODO: scale this based on _boxSizeAtCrop and current box size
                   rect: _dragRect ?? _cropRect ?? Rect.zero,
                   child: Container(
                     decoration: BoxDecoration(
@@ -193,4 +181,22 @@ class _ImageCropperState extends State<ImageCropper> {
           ),
         ),
       );
+}
+
+// TODO: render this into the correct aspect ratio
+class CroppedImagePainter extends CustomPainter {
+  final ImageCropDetails crop;
+  CroppedImagePainter(this.crop) {
+    // debugPrint('size= ${crop?.image?.width}x${crop?.image?.height}, rect: ${crop?.rect}');
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (crop == null) return;
+    var paint = Paint();
+    canvas.drawImageRect(crop.image, crop.rect, Offset.zero & size, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
