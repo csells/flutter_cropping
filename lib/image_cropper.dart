@@ -19,7 +19,6 @@ class _ImageCropperState extends State<ImageCropper> {
   Color _bgColor;
   ui.Image _image;
   Rect _cropRect;
-  Size _boxSizeAtCrop;
   Rect _dragRect;
   Offset _startDrag;
   Offset _currentDrag;
@@ -32,22 +31,25 @@ class _ImageCropperState extends State<ImageCropper> {
   }
 
   void asyncInit() async {
-    _image = await _getImage();
-    var size = Size(_image.width.toDouble(), _image.height.toDouble());
+    var image = await _resolveImage(widget.imageProvider);
+    var size = Size(image.width.toDouble(), image.height.toDouble());
     var rect = Offset.zero & size;
+    var palette = await PaletteGenerator.fromImage(image, region: rect);
 
-    var palette = await PaletteGenerator.fromImage(_image, region: rect);
-    setState(() => _bgColor = palette.dominantColor.color);
+    setState(() {
+      _image = image;
+      _bgColor = palette.dominantColor.color;
+    });
 
     _crop(rect, size);
   }
 
-  Future<ui.Image> _getImage() async {
+  static Future<ui.Image> _resolveImage(ImageProvider provider) {
     Timer timer;
-    final stream = widget.imageProvider.resolve(ImageConfiguration());
+    final stream = provider.resolve(ImageConfiguration());
     final completer = Completer<ui.Image>();
     ImageStreamListener listener;
-    listener = ImageStreamListener((ImageInfo info, _) {
+    listener = ImageStreamListener((info, _) {
       timer?.cancel();
       stream.removeListener(listener);
       completer.complete(info.image);
@@ -55,7 +57,7 @@ class _ImageCropperState extends State<ImageCropper> {
 
     timer = Timer(Duration(seconds: 15), () {
       stream.removeListener(listener);
-      completer.completeError(TimeoutException('Timeout loading from ${widget.imageProvider}'));
+      completer.completeError(TimeoutException('Timeout loading from $provider'));
     });
 
     stream.addListener(listener);
@@ -96,6 +98,7 @@ class _ImageCropperState extends State<ImageCropper> {
     if (newRect.size.width < 4 && newRect.size.height < 4) {
       newRect = Offset.zero & boxSize;
     }
+
     setState(() {
       _dragRect = null;
       _startDrag = null;
@@ -105,18 +108,8 @@ class _ImageCropperState extends State<ImageCropper> {
   }
 
   void _crop(Rect rect, Size size) {
-    setState(() {
-      _cropRect = rect;
-      _boxSizeAtCrop = size;
-    });
-
-    // scale crop rect, relative to render object box, to be relative to image size
-    var scaleX = _image.width / size.width;
-    var scaleY = _image.height / size.height;
-    widget.onCrop(ImageCropDetails()
-      ..image = _image
-      ..rect = scaleRect(_cropRect, scaleX, scaleY)
-      ..bgColor = _bgColor);
+    setState(() => _cropRect = rect);
+    widget.onCrop(ImageCropDetails(image: _image, cropRect: _cropRect, bgColor: _bgColor));
   }
 
   @override
@@ -124,22 +117,37 @@ class _ImageCropperState extends State<ImageCropper> {
         color: _bgColor,
         alignment: Alignment.center,
         child: Padding(
-          padding: const EdgeInsets.all(10),
-          // GestureDetector is used to handle the selection rectangle
-          child: GestureDetector(
-            onPanDown: _onPanDown,
-            onPanUpdate: _onPanUpdate,
-            onPanCancel: _onPanCancel,
-            onPanEnd: _onPanEnd,
-            child: CustomPaint(
-              foregroundPainter: _dragRect != null
-                  ? CropRectPainter(_dragRect)
-                  : _cropRect != null
-                      ? CropRectPainter(_cropRect, scaleSize: _boxSizeAtCrop)
-                      : null,
-              child: Image(key: _imageKey, image: widget.imageProvider),
+          padding: EdgeInsets.all(10),
+          child: FittedBox(
+            child: GestureDetector(
+              onPanDown: _onPanDown,
+              onPanUpdate: _onPanUpdate,
+              onPanCancel: _onPanCancel,
+              onPanEnd: _onPanEnd,
+              child: Stack(
+                children: [
+                  Image(key: _imageKey, image: widget.imageProvider),
+                  PositionedRect(rect: _dragRect ?? _cropRect),
+                ],
+              ),
             ),
           ),
         ),
       );
+}
+
+class PositionedRect extends StatelessWidget {
+  final ui.Rect rect;
+  PositionedRect({@required this.rect});
+
+  @override
+  Widget build(BuildContext context) => rect == null
+      ? Container()
+      : Positioned(
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          child: Container(decoration: BoxDecoration(border: Border.all(width: 2))),
+        );
 }
