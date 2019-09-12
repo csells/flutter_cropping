@@ -127,7 +127,7 @@ class _ImageCropperState extends State<ImageCropper> {
               child: Stack(
                 children: [
                   Image(key: _imageKey, image: widget.imageProvider),
-                  PositionedRect(rect: _dragRect ?? _cropRect),
+                  SelectionRect(dragRect: _dragRect, cropRect: _cropRect),
                 ],
               ),
             ),
@@ -136,9 +136,22 @@ class _ImageCropperState extends State<ImageCropper> {
       );
 }
 
+class SelectionRect extends StatelessWidget {
+  final ui.Rect dragRect;
+  final ui.Rect cropRect;
+
+  SelectionRect({
+    @required this.dragRect,
+    @required this.cropRect,
+  });
+
+  @override
+  Widget build(BuildContext context) => PositionedRect(dragRect ?? cropRect);
+}
+
 class PositionedRect extends StatelessWidget {
   final ui.Rect rect;
-  PositionedRect({@required this.rect});
+  PositionedRect(this.rect);
 
   @override
   Widget build(BuildContext context) => rect == null
