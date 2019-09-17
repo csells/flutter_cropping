@@ -126,8 +126,10 @@ class _ImageCropperState extends State<ImageCropper> {
               onPanEnd: _onPanEnd,
               child: Stack(
                 children: [
-                  Image(key: _imageKey, image: widget.imageProvider),
-                  SelectionRect(dragRect: _dragRect, cropRect: _cropRect),
+                  _image == null
+                      ? Center(child: Text('loading...'))
+                      : Image(key: _imageKey, image: widget.imageProvider),
+                  SelectionRect(_dragRect ?? _cropRect),
                 ],
               ),
             ),
@@ -137,16 +139,21 @@ class _ImageCropperState extends State<ImageCropper> {
 }
 
 class SelectionRect extends StatelessWidget {
-  final ui.Rect dragRect;
-  final ui.Rect cropRect;
-
-  SelectionRect({
-    @required this.dragRect,
-    @required this.cropRect,
-  });
+  final ui.Rect rect;
+  SelectionRect(this.rect);
 
   @override
-  Widget build(BuildContext context) => PositionedRect(dragRect ?? cropRect);
+  Widget build(BuildContext context) => rect == null
+      ? Container()
+      : SizedBox(
+          width: rect.width + rect.left,
+          height: rect.height + rect.top,
+          child: Stack(
+            children: [
+              PositionedRect(rect),
+            ],
+          ),
+        );
 }
 
 class PositionedRect extends StatelessWidget {
@@ -154,13 +161,11 @@ class PositionedRect extends StatelessWidget {
   PositionedRect(this.rect);
 
   @override
-  Widget build(BuildContext context) => rect == null
-      ? Container()
-      : Positioned(
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
-          child: Container(decoration: BoxDecoration(border: Border.all(width: 2))),
-        );
+  Widget build(BuildContext context) => Positioned(
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        child: Container(decoration: BoxDecoration(border: Border.all(width: 2))),
+      );
 }
